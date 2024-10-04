@@ -1,0 +1,39 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       Int    @id @default(autoincrement())
+  email    String @unique
+  password String
+
+  // Relacionamento opcional com SessionAnalysis, caso necessário
+  sessions SessionAnalysis[]
+}
+
+model SessionAnalysis {
+  id                       Int      @id @default(autoincrement())
+  actionAccess             String // Corrigido para "actionAccess"
+  o_location               String? // Localização geográfica aproximada (cidade, estado, país)
+  is_sensitive_data_access Boolean // Indicador de acesso a dados sensíveis (true/false)
+  previous_sessions_count  Int? // Quantidade de sessões anteriores do usuário
+  average_session_duration Decimal? @db.Decimal(10, 2) // Duração média das sessões anteriores
+  avg_actions_per_session  Decimal? @db.Decimal(10, 2) // Número médio de ações por sessão nas sessões anteriores
+  threat_level_prediction  Decimal? @db.Decimal(5, 2) // Nível de ameaça predito pelo modelo de machine learning
+  created_at               DateTime @default(now()) // Momento de inserção do registro
+  contentLog               String?
+  // Relacionamento opcional com User, caso necessário
+  user                     User?    @relation(fields: [userId], references: [id])
+  userId                   Int?
+}
