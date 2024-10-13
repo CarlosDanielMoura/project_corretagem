@@ -1,18 +1,18 @@
 import { PrismaClient } from "@prisma/client";
-import { hash } from "bcrypt";
+import { compare, hash } from "bcrypt";
+import { BadRequestError, NotFoundError } from "../helpers/error-api";
+import { getGenerateToken } from "../helpers/getGenerateToken";
 
 const prisma = new PrismaClient();
 
 export class UserService {
   async register(email: string, password: string) {
-    // Verifica se o usuário já existe
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
-      return null;
+      throw new BadRequestError("User already exists");
     }
-    // Hash da senha
+
     const hashedPassword = await hash(password, 10);
-    // Criação do usuário
     const newUser = await prisma.user.create({
       data: {
         email,
@@ -21,10 +21,27 @@ export class UserService {
       select: {
         id: true,
         email: true,
-        password: false,
+        // password: false, // O campo "password" não precisa ser retornado
       },
     });
 
     return newUser;
+  }
+
+  async login(email: string, password: string) {
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (!existingUser) {
+      throw new NotFoundError("User not found");
+    }
+
+    const isPasswordValid = await compare(password, existingUser.password);
+    if (!isPasswordValid) {
+      throw new BadRequestError("Invalid password");
+    }
+
+    const token = getGenerateToken(existingUser);
+    const { password: _, ...userlogin } = existingUser;
+
+    return { user: userlogin, token };
   }
 }
