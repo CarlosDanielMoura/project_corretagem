@@ -3,10 +3,25 @@ import { DataSideBar } from "../../utils/dataSideBar";
 import { Home } from "./pages/Home";
 import { Cadastrar } from "./pages/Cadastrar";
 import { Users } from "./pages/Users";
+import useAuthStore from "../../context/authContext";
+import { Toaster } from "../../components/ui/toaster";
+import { toast } from "../../hooks/use-toast";
+import { useEffect } from "react";
 
 const Dashboard: React.FC = () => {
+  const auth = useAuthStore((state) => state.auth);
+
+  useEffect(() => {
+    if (auth) {
+      toast({
+        title: `Bem-vindo!`,
+        description: "Você está logado!",
+      });
+    }
+  }, [auth]);
   return (
     <div className="flex h-screen">
+      <Toaster />
       <div className="w-64 bg-gray-800 text-white p-6">
         <ul>
           {DataSideBar.map((item) => (

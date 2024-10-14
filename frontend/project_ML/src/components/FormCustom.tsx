@@ -1,11 +1,15 @@
-import { Link } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { FormEvent, useState } from "react";
 import { getLocation } from "../utils/getLocation";
 import { Toaster } from "./ui/toaster";
 import { toast } from "../hooks/use-toast";
+import useAuthStore from "../context/authContext";
+import { api } from "../api";
+import axios from "axios";
 
+// Tipagem para o LoginFormProps
 interface LoginFormProps {
   type: "login" | "register";
 }
@@ -14,6 +18,10 @@ const FormCustom = (type: LoginFormProps) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const navigate = useNavigate();
+
+  // Tipagem correta para a função login
+  const login = useAuthStore((state) => state.login);
 
   const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -22,6 +30,7 @@ const FormCustom = (type: LoginFormProps) => {
     let longitude: number | undefined;
     let o_location: string = "";
     let isSensitiveDataAccess: boolean = false;
+
     try {
       const location = await getLocation();
       latitude = location.latitude;
@@ -53,7 +62,7 @@ const FormCustom = (type: LoginFormProps) => {
       ) {
         toast({
           variant: "destructive",
-          title: "Senha não são iguais ou não atendem aos requisitos",
+          title: "Senhas não são iguais ou não atendem aos requisitos",
           description:
             "A senha deve ter no mínimo 8 caracteres, incluindo letras maiúsculas, minúsculas, números e caracteres especiais, e as senhas devem corresponder.",
         });
@@ -61,7 +70,7 @@ const FormCustom = (type: LoginFormProps) => {
       }
     }
 
-    // Dados a serem enviados ao backend
+    // Tipando corretamente o sessionData
     const sessionData = {
       email,
       password,
@@ -69,134 +78,129 @@ const FormCustom = (type: LoginFormProps) => {
       is_sensitive_data_access: isSensitiveDataAccess,
       latitude,
       longitude,
-      actionAcess: type.type,
-      // Outros campos podem ser adicionados conforme necessário
+      actionAccess: type.type,
     };
 
     console.log("Dados da sessão:", sessionData);
+    if (type.type === "login") {
+      try {
+        // Chamar a função login da store Zustand com o sessionData
+        await login(sessionData);
+        navigate("/dashboard");
+      } catch (error) {
+        if (error instanceof Error) {
+          toast({
+            variant: "destructive",
+            title: "Erro ao fazer login",
+            description:
+              "Não foi possível fazer login, usuário ou senha incorreta.",
+          });
+        } else {
+          console.error("Unexpected error:", error);
+        }
+      }
+    } else {
+      try {
+        // Chamar a função login da store Zustand com o sessionData
+        const response = await api.post("/register", sessionData);
+        toast({
+          title: response.data.message,
+        });
 
-    // Enviar os dados ao backend
-    // try {
-    //   const response = await fetch("/api/login", {
-    //     method: "POST",
-    //     headers: {
-    //       "Content-Type": "application/json",
-    //     },
-    //     body: JSON.stringify(sessionData),
-    //   });
+        navigate("/");
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          console.log("Erro ao cadastrar:", error.response.data);
 
-    //   if (!response.ok) {
-    //     throw new Error(`Erro na requisição: ${response.statusText}`);
-    //   }
-
-    //   const result = await response.json();
-    //   console.log("Resposta do servidor:", result);
-
-    //   // Redirecionar ou exibir mensagem ao usuário conforme a resposta do backend
-    // } catch (error) {
-    //   console.error("Erro ao fazer login:", error);
-    //   // Trate o erro adequadamente (exibir mensagem ao usuário, etc.)
-    // }
+          toast({
+            variant: "destructive",
+            title: "Erro ao cadastrar ",
+            description:
+              error.response.data.message || "Erro ao registrar o usuário.",
+          });
+        } else {
+          console.error("Unexpected error:", error);
+        }
+      }
+    }
   };
 
   return (
     <div className="w-full max-w-[34.25rem] h-full max-h-[42.18rem]">
-      <form
-        action=""
-        className="px-6 py-24 flex flex-col"
-        onSubmit={handleLogin}
-      >
+      <form className="px-6 py-24 flex flex-col" onSubmit={handleLogin}>
         {type.type === "login" ? (
-          <>
-            <h1 className="font-plus_jakarta leading-9 font-bold text-3xl">
-              Entrar
-            </h1>
-          </>
+          <h1 className="font-plus_jakarta leading-9 font-bold text-3xl">
+            Entrar
+          </h1>
         ) : (
-          <>
-            <h1 className="font-plus_jakarta leading-9 font-bold text-3xl">
-              Registrar
-            </h1>
-          </>
+          <h1 className="font-plus_jakarta leading-9 font-bold text-3xl">
+            Registrar
+          </h1>
         )}
 
         {type.type === "login" ? (
-          <>
-            <p className="mt-3 font-inter text-sm leading-5 text-login-text_color flex gap-2">
-              Não tem uma conta?
-              <Link
-                to="/register"
-                className="text-login-text_color_secundary font-medium underline decoration-1"
-              >
-                Registre-se
-              </Link>
-            </p>
-          </>
+          <p className="mt-3 font-inter text-sm leading-5 text-login-text_color flex gap-2">
+            Não tem uma conta?
+            <Link
+              to="/register"
+              className="text-login-text_color_secundary font-medium underline decoration-1"
+            >
+              Registre-se
+            </Link>
+          </p>
         ) : (
-          <>
-            <p className="mt-3 font-inter text-sm leading-5 text-login-text_color flex gap-2">
-              Já tem uma conta?
-              <Link
-                to="/"
-                className="text-login-text_color_secundary font-medium underline decoration-1"
-              >
-                Entrar
-              </Link>
-            </p>
-          </>
+          <p className="mt-3 font-inter text-sm leading-5 text-login-text_color flex gap-2">
+            Já tem uma conta?
+            <Link
+              to="/"
+              className="text-login-text_color_secundary font-medium underline decoration-1"
+            >
+              Entrar
+            </Link>
+          </p>
         )}
 
         <div className="mt-6 w-full relative">
           <Input
-            className="  rounded-md border-login-border_color h-12 pt-6"
+            className="rounded-md border-login-border_color h-12 pt-6"
             type="email"
             onChange={(e) => setEmail(e.target.value)}
           />
-          <p className="absolute left-[0.80rem] top-2 font-inter font-medium leading-5  text-login-border_color text-xs">
+          <p className="absolute left-[0.80rem] top-2 font-inter font-medium leading-5 text-login-border_color text-xs">
             Email :
           </p>
         </div>
+
         <div className="mt-6 w-full relative">
           <Input
             className="rounded-md border-login-border_color h-12 pt-6"
             type="password"
             onChange={(e) => setPassword(e.target.value)}
           />
-          <p className="absolute left-[0.80rem] top-2 font-inter font-medium leading-5  text-login-border_color text-xs">
+          <p className="absolute left-[0.80rem] top-2 font-inter font-medium leading-5 text-login-border_color text-xs">
             Senha :
           </p>
         </div>
-        {type.type === "register" ? (
-          <>
-            <div className="mt-6 w-full relative">
-              <Input
-                className="rounded-md border-login-border_color h-12 pt-6"
-                type="password"
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
-              <p className="absolute left-[0.80rem] top-2 font-inter font-medium leading-5  text-login-border_color text-xs">
-                Confirmar senha :
-              </p>
-            </div>
-          </>
-        ) : null}
 
-        {type.type === "register" ? (
-          <>
-            <Button className="mt-9 h-12 bg-login-button_color rounded-xl py-3 font-inter font-semibold text-base leading-7 hover:bg-login-button_color hover:opacity-95  hover:duration-500">
-              Continue
-            </Button>
-          </>
-        ) : (
-          <>
-            <Button
-              type="submit"
-              className="mt-9 h-12 bg-login-button_color rounded-xl py-3 font-inter font-semibold text-base leading-7 hover:bg-login-button_color hover:opacity-95  hover:duration-500"
-            >
-              Entrar
-            </Button>
-          </>
+        {type.type === "register" && (
+          <div className="mt-6 w-full relative">
+            <Input
+              className="rounded-md border-login-border_color h-12 pt-6"
+              type="password"
+              onChange={(e) => setConfirmPassword(e.target.value)}
+            />
+            <p className="absolute left-[0.80rem] top-2 font-inter font-medium leading-5 text-login-border_color text-xs">
+              Confirmar senha :
+            </p>
+          </div>
         )}
+
+        <Button
+          type="submit"
+          className="mt-9 h-12 bg-login-button_color rounded-xl py-3 font-inter font-semibold text-base leading-7 hover:bg-login-button_color hover:opacity-95 hover:duration-500"
+        >
+          {type.type === "login" ? "Entrar" : "Continue"}
+        </Button>
       </form>
       <Toaster />
     </div>
