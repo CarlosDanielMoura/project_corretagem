@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import jwt from "jsonwebtoken";
 import { api } from "../api";
 
 // Definindo o tipo do sessionData

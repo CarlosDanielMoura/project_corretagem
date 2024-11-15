@@ -4,17 +4,17 @@ const DataSideBar = [
   {
     title: "Home",
     path: "/homeDashboard",
-    icon: <Home />,
+    icon: <Home color="#36251C" />,
   },
   {
     title: "Cadastrar",
     path: "/cadastrar",
-    icon: <CirclePlus />,
+    icon: <CirclePlus color="#36251C" />,
   },
   {
     title: "Usuários",
     path: "/users",
-    icon: <Users />,
+    icon: <Users color="#36251C" />,
   },
 ];
 

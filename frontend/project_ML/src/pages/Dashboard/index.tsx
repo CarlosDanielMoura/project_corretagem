@@ -19,18 +19,34 @@ const Dashboard: React.FC = () => {
       });
     }
   }, [auth]);
+
   return (
-    <div className="flex h-screen">
+    <div className="flex h-[calc(100vh-4rem)]">
       <Toaster />
-      <div className="w-64 bg-gray-800 text-white p-6">
-        <ul>
+
+      {/* Menu lateral fixo */}
+      <aside className="w-64 h-full bg-white border-r p-6 fixed">
+        <div className="flex flex-col">
+          <p className="text-login-primary text-base font-roboto font-medium">
+            NOVO TEMPO CAFÉ
+          </p>
+          <a
+            className="text-login-primary text-sm font-roboto font-medium"
+            href="#"
+          >
+            Ver informações
+          </a>
+        </div>
+        <ul className="flex flex-col gap-3 mt-8 ">
           {DataSideBar.map((item) => (
             <li key={item.title} className="flex items-center mb-4">
               <span className="text-xl">{item.icon}</span>
               <NavLink
-                to={`/dashboard${item.path}`} // Certifique-se que o caminho comece com /dashboard
+                to={`/dashboard${item.path}`}
                 className={({ isActive }) =>
-                  `ml-3 ${isActive ? "font-bold" : "font-normal"}`
+                  `ml-3 ${
+                    isActive ? "font-bold" : "font-normal"
+                  } text-login-button_color`
                 }
               >
                 {item.title}
@@ -38,14 +54,16 @@ const Dashboard: React.FC = () => {
             </li>
           ))}
         </ul>
-      </div>
-      <div className="flex-grow p-6 bg-gray-100">
+      </aside>
+
+      {/* Área de conteúdo rolável */}
+      <main className="ml-64 flex-grow p-6 bg-gray-100 overflow-y-auto">
         <Routes>
           <Route path="homeDashboard" element={<Home />} />
           <Route path="cadastrar" element={<Cadastrar />} />
           <Route path="users" element={<Users />} />
         </Routes>
-      </div>
+      </main>
     </div>
   );
 };
